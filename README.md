@@ -1,83 +1,150 @@
+﻿# SignSetu: Real-Time Indian Sign Language (ISL) Recognition System
 
+A real-time Computer Vision and Deep Learning framework designed to detect, track, and classify Indian Sign Language (ISL) hand gestures using standard webcam video feeds.
 
-## Indian Sign Language Detection using Mediapipe
+![All ISL Gestures Covered](images/allGestures.png)
 
-This project is aimed at detecting and recognizing Indian Sign Language (ISL) gestures using the Mediapipe library. The project is implemented in Python.
-![All gestures covered by project](images/allGestures.png)
+---
 
-### Requirements
+## Abstract & Motivation
 
-To run this project, you will need the following dependencies:
+Indian Sign Language (ISL) serves as the primary mode of visual communication for millions in the deaf and hard-of-hearing community across India. Unlike American Sign Language (ASL) which predominantly utilizes single-handed finger-spelling, ISL encompasses a rich vocabulary of both **two-handed gestures** (such as **A**, **B**, **D**, **H**, **M**, **P**, **W**) and **single-handed gestures** (such as **C**, **L**, **O**, and numbers **1–9**).
 
-- Python 3.6 or higher
-- Mediapipe library
-- OpenCV library
-- Numpy library
+**SignSetu** bridges communication barriers by providing an automated, real-time gesture recognition interface. The system captures live video, tracks hand landmarks using Google MediaPipe, extracts invariant spatial features, and classifies the signs using a deep neural network classifier—delivering instant visual feedback through an interactive Heads-Up Display (HUD).
 
-### Installation
+---
 
-1. Install Python 3.6 or higher on your system.
-2. Install the Mediapipe library using the following command:
+## Key Features
 
-   ```
-   pip install mediapipe
-   ```
+* **Multi-Hand Tracking**: Real-time detection and 3D coordinate estimation for up to two hands simultaneously using MediaPipe Hands.
+* **Joint Two-Hand Fusion Engine**: Evaluates joint probability distributions when both hands are presented, enabling accurate classification of two-handed ISL alphabets.
+* **Single-Hand & Dual-Hand Mode Intelligence**:
+  * Detects 1-handed signs (**C**, **L**, **O**, **1–9**) with single-hand input.
+  * Detects 2-handed signs (**A**, **B**, **M**, **H**, etc.) when both hands work in coordination.
+  * Provides on-screen guidance if a two-handed gesture is attempted with only one hand.
+* **High-Throughput Vectorized Inference**: Utilizes direct batch tensor execution for smooth, low-latency performance at 30+ FPS.
+* **Temporal Smoothing & Stabilization**: Implements rolling majority-voting queues to eliminate high-frequency camera noise and prevent flickering.
+* **Interactive Heads-Up Display (HUD)**:
+  * Prominent display of recognized sign and confidence percentage.
+  * Dynamic status badge indicating gesture mode ([Two-Handed Sign], [Single-Handed Sign], or [Needs 2nd Hand]).
+  * Live hand tracking count and individual wrist annotations.
+* **Integrated Screenshot Capture**: Press 's' to trigger a 5-second countdown timer for capturing clean verification frames with annotations.
 
-3. Install the OpenCV library using the following command:
+---
 
-   ```
-   pip install opencv-python
-   ```
+## System Architecture & Pipeline
 
-4. Install the Numpy library using the following command:
+![System Process Pipeline](images/process.png)
 
-   ```
-   pip install numpy
-   ```
+The end-to-end processing pipeline operates in five continuous stages:
 
-### Usage
+1. **Video Acquisition**: Live frames are acquired from the webcam using OpenCV and converted to RGB.
+2. **Landmark Extraction**: MediaPipe Hands extracts 21 3D skeletal landmark coordinates \((x, y, z)\) for each detected hand.
+3. **Feature Preprocessing & Normalization**:
+   * Landmark coordinates are translated relative to the wrist origin (landmark 0).
+   * Coordinates are normalized by the maximum coordinate spread, ensuring scale and distance invariance.
+   * Flattened into a standardized 42-dimensional feature vector per hand.
+4. **Deep Neural Network Classification**:
+   * A multi-layer Feedforward Neural Network (FNN) processes the feature vectors.
+   * Model architecture comprises dense hidden layers with ReLU activations, dropout regularization (0.5), and a 35-class Softmax output layer.
+5. **Joint Probability Fusion & HUD Rendering**:
+   * Combines per-hand predictions and outputs the stabilized sign classification directly onto the video stream.
 
-1. Clone the repository to your local machine.
+---
 
-2. Open the command prompt and navigate to the cloned directory.
+## Live Output Demonstrations
 
-3. Run the following command to start the program:
+| Two-Handed Sign Recognition ('M') | Single-Handed Sign Recognition ('L') |
+|:---:|:---:|
+| ![Two-Handed Sign M](images/example1.png) | ![Single-Handed Sign L](images/example2.png) |
+| *Simultaneous two-hand tracking with joint fusion classification* | *Single-hand skeletal tracking with real-time HUD feedback* |
 
-   ```
-   python isl_detection.py
-   ```
+---
 
-4. The program will start and display the video stream from the webcam.
+## Gestures Covered (35 Classes)
 
-5. To exit the program, press the 'q' key.
+| Category | Classes | Hand Mode |
+|:---|:---|:---|
+| **Numeric Digits** | 1, 2, 3, 4, 5, 6, 7, 8, 9 | Single-Handed |
+| **Alphabetic Characters** | C, I, L, O, U, V | Single-Handed |
+| **Alphabetic Characters** | A, B, D, E, F, G, H, J, K, M, N, P, Q, R, S, T, W, X, Y, Z | Two-Handed |
 
-### How it works
+---
 
-The program uses the Mediapipe library to detect landmarks on the hand and fingers of the user in real-time. These landmarks are then fed into a feedforward neural network (FNN) that was trained on an Indian Sign Language (ISL) dataset from Kaggle. The FNN predicts the class of the hand gesture based on the detected landmarks.
+## Project Structure
 
-During execution, the program uses the webcam to capture video frames, applies the Mediapipe hand detection model to detect the hand in each frame, and extracts the hand landmarks. The extracted landmarks are then passed to the classification model, which predicts the class of the hand gesture. The predicted class is displayed on the video stream in real-time.
+`	ext
+Indian-Sign-Language-Detection/
+│
+├── isl_detection.py               # Main application for live webcam recognition & HUD
+├── dataset_keypoint_generation.py  # Script for extracting MediaPipe landmarks from dataset
+├── ISL_classifier.ipynb           # Model architecture, training pipeline, and evaluation
+├── model.h5                       # Pre-trained deep neural network model weights
+├── keypoint.csv                   # Extracted 42-dimensional landmark coordinate dataset
+├── requirements.txt               # Project dependencies and package versions
+│
+├── images/                        # Architectural diagrams & demonstration assets
+│   ├── allGestures.png            # ISL reference chart of all 35 gestures
+│   ├── process.png                # System processing workflow diagram
+│   ├── example1.png               # Demonstration: Two-handed recognition (Sign M)
+│   └── example2.png               # Demonstration: Single-handed recognition (Sign L)
+│
+└── screenshots/                   # Destination for user-captured verification screenshots
+`
 
-![Process image](images/process.png)
+---
 
-## File Descriptions
+## Installation & Setup
 
-- `isl_detection.py`: This file is the main python file for real-time ISL detection.
-- `dataset_keypoint_generation.py`: This file converts [ISL kaggle image dataset](https://www.kaggle.com/datasets/prathumarikeri/indian-sign-language-isl) to 42 landmarks.
-- `keypoint.csv`: This file contains the 42 landmarks for all images.
-- `ISL_classifier.ipynb`: The notebook is used to create a classifier model to classify the hand gestures.
-- `model.h5`: This is the classifier model.
+### Prerequisites
+* Python 3.8 or higher
+* Standard webcam or integrated camera
 
-### Examples
-![example image 1](images/example1.png)
-![example image 2](images/example2.png)
+### Step 1: Clone or Navigate to Project Directory
+`powershell
+cd Indian-Sign-Language-Detection
+`
 
-### Future Improvements
+### Step 2: Create and Activate Virtual Environment
+`powershell
+python -m venv .venv
+.\.venv\Scripts\activate
+`
 
-The following improvements can be made to the project:
+### Step 3: Install Required Dependencies
+`powershell
+pip install -r requirements.txt
+`
 
-- Expand the dataset to include more examples of each ISL gesture to improve the accuracy of the classification model.
-- Implement a more sophisticated model architecture, such as a convolutional neural network (CNN), to improve the accuracy of the classification model.
-- Add support for more ISL gestures.
-- Implement a feature to convert the recognized gestures into text or speech.
-- Make the program more user-friendly by adding a GUI.
+### Step 4: Run Live Recognition
+`powershell
+python isl_detection.py
+`
 
+---
+
+## Controls
+
+| Key | Action |
+|:---|:---|
+| **s** | Start a 5-second countdown to save a high-resolution screenshot to screenshots/ |
+| **q** or **ESC** | Gracefully stop the video stream and exit the application |
+
+---
+
+## Model Training & Performance Metrics
+
+* **Classifier Architecture**: Multi-Layer Perceptron (Input: 42 \(\rightarrow\) 1470 \(\rightarrow\) 832 \(\rightarrow\) 428 \(\rightarrow\) 264 \(\rightarrow\) Output: 35)
+* **Optimization**: Adam Optimizer with Sparse Categorical Crossentropy loss
+* **Regularization**: 50% Dropout across intermediate layers with EarlyStopping on validation loss
+* **Performance Metrics**:
+  * **Accuracy**: > 99.8% on held-out validation dataset
+  * **Precision / Recall / F1-Score**: 0.99+ across evaluated gesture classes
+
+---
+
+## Future Scope
+
+1. **Continuous Sentence Formation**: Integrate Recurrent Neural Networks (LSTM/GRU) or Transformers to interpret full sign sentences and temporal transitions.
+2. **Speech Synthesis**: Add Text-to-Speech (TTS) integration to vocalize recognized gestures for seamless two-way communication.
+3. **Mobile & Edge Deployment**: Quantize model weights using TensorFlow Lite for lightweight execution on Android and Raspberry Pi devices.
